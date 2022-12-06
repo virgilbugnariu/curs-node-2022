@@ -9,43 +9,59 @@ const db = {
 let lastId = 1;
 
 class Students {
-  getAll(request, response) {
-    response.send(JSON.stringify(db));
+  getAll() {
+    return db.students;
   }
 
-  get(request, response) {
-    const studentId = parseInt(request.params.id);
+  get(id) {
+    const studentId = parseInt(id);
 
     const result = db.students.find((student) => student.id === studentId)
-    response.send(JSON.stringify(result));
+    return result;
   }
 
-  create(request, response) {
-    const body = request.body;
+  create(firstName, lastName) {
     lastId += 1;
 
     const newStudent = {
         id: lastId,
-        ...body,
+        firstName,
+        lastName,
     };
 
     db.students.push(newStudent);
 
-    response.send(JSON.stringify(newStudent));
+    return newStudent;
   }
 
-  delete(request, response) {
-    const studentId = parseInt(request.params.id);
+  delete(id) {
+    const studentId = parseInt(id);
 
     const updatedStudentsList = db.students.filter((student) => student.id !== studentId);
 
     db.students = updatedStudentsList;
 
-    response.send();
+    return true;
   }
 
-  update(request, response) {
+  update(id, firstName, lastName) {
+    db.students = db.students.map((student) => {
+      if(student.id === parseInt(id)) {
+        return {
+          id,
+          firstName,
+          lastName
+        }
+      }
 
+      return student;
+    });
+
+    return {
+      id,
+      firstName,
+      lastName,
+    };
   }
 }
 

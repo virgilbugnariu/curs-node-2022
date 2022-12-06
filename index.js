@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const Students = require('./controllers/Students');
 const JWTMiddleware = require('./middlewares/JWTMiddleware');
 const adminOnlyGuard = require('./middlewares/adminOnlyGuard');
-
+const { graphqlHTTP } = require('express-graphql');
+const { buildSchema } = require('graphql');
 const app = express();
 
 const JWT_KEY = '1158659639IFIUHSDIUSDF';
@@ -11,22 +12,6 @@ const JWT_KEY = '1158659639IFIUHSDIUSDF';
 app.use(express.json());
 
 const studentsController = new Students();
-
-app.get('/students', (request, response) => {
-    studentsController.getAll(request, response);
-});
-
-app.get('/students/:id', (request, response) => {
-    studentsController.get(request, response);
-});
-
-app.post('/students', JWTMiddleware, adminOnlyGuard, (request, response) => {
-    studentsController.create(request, response);
-});
-
-app.delete('/students/:id', (request, response) => {
-    studentsController.delete(request, response);
-});
 
 app.post('/login', async (request, response) => {
     const { username, password } = request.body;
@@ -50,5 +35,50 @@ app.post('/login', async (request, response) => {
 
     response.send();
 });
+
+var schema = buildSchema(`
+  type Query {
+    students: [Student]
+    student(id: ID!): Student
+  }
+
+  type Mutation {
+    createStudent(firstName: String!, lastName: String!): Student
+    updateStudent(id: ID!, firstName: String, lastName: String): Student
+    deleteStudent(id: ID!): Boolean
+  }
+
+  type Student {
+    id: ID!
+    firstName: String
+    lastName: String
+  }
+`);
+
+var root = {
+    students: () => studentsController.getAll(),
+
+    student: ({ id }) => studentsController.get(id),
+
+    createStudent: ({
+        firstName,
+        lastName
+    }) => studentsController.create(firstName, lastName),
+    
+    updateStudent: ({
+        id,
+        firstName,
+        lastName
+    }) => studentsController.update(id, firstName, lastName),
+    
+    deleteStudent: ({ id }) => studentsController.delete(id) 
+  };
+
+
+app.post('/graphql', graphqlHTTP({
+    schema: schema,
+    rootValue: root,
+    graphiql: true,
+}));
 
 app.listen(8080);
