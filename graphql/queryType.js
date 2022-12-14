@@ -5,9 +5,7 @@ const {
     GraphQLNonNull
 } = require('graphql');
 
-
-const Students = require('../controllers/Students');
-const studentsController = new Students();
+const models = require('../models');
 
 const studentType = require('./types/studentType');
 
@@ -17,7 +15,7 @@ const queryType = new GraphQLObjectType({
       students: {
         type: new GraphQLList(studentType),
         resolve: () => {
-            return studentsController.getAll()
+          return models.Student.findAll();
         }
       },
       student: {
@@ -27,9 +25,14 @@ const queryType = new GraphQLObjectType({
                 type: new GraphQLNonNull(GraphQLID),
             }
         },
-        resolve: (_, args) => {
-            const { id } = args;
-            return studentsController.get(id);
+        resolve: async (_, { id }) => {
+          if(!id) {
+            return null;
+          }
+
+          const studentData = await models.Student.findByPk(id);
+
+          return studentData;
         }
       }
     }

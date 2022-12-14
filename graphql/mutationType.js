@@ -6,8 +6,8 @@ const {
     GraphQLString,
 } = require('graphql');
 
-const Students = require('../controllers/Students');
-const studentsController = new Students();
+const models = require('../models');
+
 const jwt = require('jsonwebtoken');
 
 const studentType = require('./types/studentType');
@@ -28,13 +28,18 @@ const mutationType = new GraphQLObjectType({
                     type: new GraphQLNonNull(GraphQLString),
                 },
             },
-            resolve: (source, { firstName, lastName }, { tokenPayload }) => {
+            resolve: async (source, { firstName, lastName }, { tokenPayload }) => {
                 if(!tokenPayload) {
                     return null;
                 }
                 
                 if(tokenPayload.role === 'ADMIN') {
-                    return studentsController.create(firstName, lastName)
+                    const user = await models.Student.create({
+                        firstName,
+                        lastName
+                    });
+
+                    return user;
                 }
 
                 return null;
@@ -53,8 +58,26 @@ const mutationType = new GraphQLObjectType({
                     type: GraphQLString,
                 },
             },
-            resolve: (source, { id, firstName, lastName }) => {
-                return studentsController.update(id, firstName, lastName)
+            resolve: async (source, { id, firstName, lastName }, { tokenPayload }) => {
+                if(!tokenPayload) {
+                    return null;
+                }
+                
+                if(tokenPayload.role === 'ADMIN') {
+                    await models.Student.update({
+                        firstName,
+                        lastName
+                    }, {
+                        where: {
+                            id,
+                        }
+                    });
+
+                    return models.Student.findByPk(id);
+                }
+
+
+                return null;
             }
         },
         deleteStudent: {
@@ -65,7 +88,11 @@ const mutationType = new GraphQLObjectType({
                 },
             },
             resolve: (source, { id }) => {
-                return studentsController.delete(id);
+                return models.Student.destroy({
+                    where: {
+                        id, 
+                    }
+                })
             }
         },
         login: {
