@@ -1,40 +1,17 @@
-const { 
+const {
     GraphQLObjectType,
-    GraphQLID,
-    GraphQLList,
-    GraphQLNonNull
 } = require('graphql');
 
-const models = require('../models');
-
-const studentType = require('./types/studentType');
+const studentsQuery = require('./queries/studentsQuery');
+const studentQuery = require('./queries/studentQuery');
+const groupQuery = require('./queries/groupQuery');
 
 const queryType = new GraphQLObjectType({
     name: 'Query',
     fields: {
-      students: {
-        type: new GraphQLList(studentType),
-        resolve: () => {
-          return models.Student.findAll();
-        }
-      },
-      student: {
-        type: studentType,
-        args: {
-            id: {
-                type: new GraphQLNonNull(GraphQLID),
-            }
-        },
-        resolve: async (_, { id }) => {
-          if(!id) {
-            return null;
-          }
-
-          const studentData = await models.Student.findByPk(id);
-
-          return studentData;
-        }
-      }
+      students: studentsQuery,
+      student: studentQuery,
+      group: groupQuery,
     }
   });
 
